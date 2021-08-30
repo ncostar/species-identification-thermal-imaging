@@ -1,8 +1,6 @@
 # Species Identification in Thermal Imaging
 Documentation for COMPSCI 760 group project
 
-## 
-
 ## Preprocessing 
 
 The main [preprocessing code](preprocess/preprocess.py) loads the raw dataset.hdf5 file and performs the following operations: 
@@ -70,4 +68,3 @@ The [dimentionality reduction code](preprocess/dim_reduction.py) allows any sele
 Hyperparameter tuning is done using the [Ray Tune](https://docs.ray.io/en/latest/tune/index.html) library. 
 
 ## Results
-
