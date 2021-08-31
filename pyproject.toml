@@ -6,14 +6,15 @@ authors = ["Zac Pullar-Strecker <zacmps@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-numpy = "^1.21.2"
-h5py = "^3.4.0"
+numpy = "^1.19.2"
+h5py = "^3.1.0"
 # Should be installed with +cu110 or similar, see https://github.com/python-poetry/poetry/issues/2613
-torch = "1.7.0" 
+#torch = "1.7.0" 
 sklearn = "^0.0"
 seaborn = "^0.11.2"
 keras = "^2.6.0"
 matplotlib = "^3.4.3"
+tensorflow = "^2.6.0"
 
 [tool.poetry.dev-dependencies]
 
