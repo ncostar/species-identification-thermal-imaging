@@ -1,6 +1,16 @@
 # Species Identification in Thermal Imaging
 Documentation for COMPSCI 760 group project
 
+
+## Installing Dependencies
+
+```
+$ pip install poetry
+$ poetry install
+# Replace +cu110 with +cu10.2 if you only have cuda 10.2
+$ poetry run python -m pip install torch==1.7.0+cu110 torchaudio==0.7.0 torchvision==0.8.1+cu110 -f https://download.pytorch.org/whl/torch_stable.html
+```
+
 ## Preprocessing 
 
 The main [preprocessing code](preprocess/preprocess.py) loads the raw dataset.hdf5 file and performs the following operations: 
