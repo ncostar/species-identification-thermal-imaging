@@ -1,3 +1,4 @@
+import argparse
 import warnings
 from tensorflow.keras.optimizers import Adam
 from keras.models import Sequential, Model
@@ -19,6 +20,10 @@ import random as python_random
 
 INPUT_DIR = "F:/biosecurity/species-identification-thermal-imaging"
 OUTPUT_DIR = "F:/biosecurity/species-identification-thermal-imaging"
+
+EPOCHS = 100
+BATCH_SIZE = 32
+LEARNING_RATE = 0.001
 
 # set seeds
 np.random.seed(7654)
@@ -573,7 +578,6 @@ def load(name):
 
 
 def define_joint_model():
-
     MLP = Sequential()
     MLP.add(Flatten())
     MLP.add(Dropout(0.5))
@@ -655,7 +659,7 @@ class DataGenerator(Sequence):
     def __getitem__(self, index):
         indices = self.indices[index * self.batch_size:(index + 1) * self.batch_size]
         vids = np.array(self.vids[indices])
-        #x, y = np.meshgrid(range(vids.shape[2]), range(vids.shape[3]))
+        # x, y = np.meshgrid(range(vids.shape[2]), range(vids.shape[3]))
         x, y = np.meshgrid(np.arange(32)*0.75, np.arange(32)*0.75)
         if self.crop:
             x, y = self.random_zoom(vids, x, y)
@@ -679,41 +683,7 @@ class DataGenerator(Sequence):
             np.random.shuffle(self.indices)
 
 
-def main():
-    print("Dataset loading..", end = " ")
-    # Loading the preprocessed videos
-    X_train, y_train = load("/training")
-    X_val, y_val = load("/validation")
-    X_test, y_test = load("/test")
-    # Since Keras likes the channels last data format
-    X_train = X_train.transpose(0,1,3,4,2)
-    X_val = X_val.transpose(0,1,3,4,2)
-    X_test = X_test.transpose(0,1,3,4,2)
-    # Loading the preprocessed movement features
-    X_train_mvm, _ = load("-movement/training")
-    X_val_mvm, _ = load("-movement/validation")
-    X_test_mvm, _ = load("-movement/test")
-    print("Dataset loaded!")
-
-    epochs = 100
-    batch_size = 32
-    learning_rate = 0.001
-
-    model = define_joint_model()
-
-    model.compile(loss='categorical_crossentropy', optimizer = Adam(lr = learning_rate), metrics=["accuracy"]) 
-    print(model.summary())
-                
-    train_data = DataGenerator(X_train, X_train_mvm, y_train, batch_size, True, 10, 0, 0)
-    val_data = DataGenerator(X_val, X_val_mvm, y_val, batch_size)
-    test_data = DataGenerator(X_test, X_test_mvm, y_test, batch_size)
-
-    # create log dir
-    if not os.path.exists(f"{OUTPUT_DIR}/logs/I3D"):
-        os.makedirs(f"{OUTPUT_DIR}/logs/I3D")
-
-    current_time = datetime.datetime.now().isoformat().replace(":", "-")
-
+def fit_model(model, train_data, val_data, test_data, current_time):
     # csv logs based on the time
     csv_logger = CSVLogger(f'{OUTPUT_DIR}/logs/I3D/log_' + current_time + '.csv', append=True, separator=';')
 
@@ -726,11 +696,13 @@ def main():
     # Training the model on the training set, with early stopping using the validation set
     callbacks = [EarlyStopping(patience = 10), reduce_lr, csv_logger, checkpointer]
 
-    history = model.fit(train_data,
-            epochs = epochs,
+    return model.fit(train_data,
+            epochs = EPOCHS,
             validation_data = val_data,
             callbacks = callbacks)
 
+
+def plot_training_history(history, current_time):
     # plot training history
     # two plots
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize = (12,12))
@@ -753,7 +725,73 @@ def main():
 
     fig.savefig(f'{OUTPUT_DIR}/logs/I3D/plot' + current_time + '.svg', format = 'svg')
 
-    model.load_weights(f'{OUTPUT_DIR}/logs/I3D/best_model_' + current_time + '.hdf5')
+
+def generate_confidence_evaluation(probabilities, predictions, true_classes):
+    misclassifications = predictions != true_classes
+    # This is, I think, the probability of the **true** class for all cases where it was
+    # mispredicted.
+
+    print(misclassifications[:1])
+
+
+    print("---")
+    print("true classes", true_classes.shape)
+    print("probabilities", probabilities.shape)
+    print("probabilities[true]", probabilities[:,true_classes].shape)
+    misclassified_confidences = probabilities[true_classes][misclassifications]
+    print("misclassified", misclassified_confidences.shape)
+    plt.hist(misclassified_confidences, bins=20)
+    plt.xlabel("Confidence")
+    plt.ylabel("Misclassifications")
+
+
+def load_datasets():
+    print("Dataset loading..", end = " ")
+    # Loading the preprocessed videos
+    X_train, y_train = load("/training")
+    X_val, y_val = load("/validation")
+    X_test, y_test = load("/test")
+    # Since Keras likes the channels last data format
+    X_train = X_train.transpose(0,1,3,4,2)
+    X_val = X_val.transpose(0,1,3,4,2)
+    X_test = X_test.transpose(0,1,3,4,2)
+    # Loading the preprocessed movement features
+    X_train_mvm, _ = load("-movement/training")
+    X_val_mvm, _ = load("-movement/validation")
+    X_test_mvm, _ = load("-movement/test")
+    # The above data arrays are of shape (? samples, 45 frames, 24 width, 24 height, 3 channels)
+    # and the movement data is of shape (? samples, 45 frames, 9 channels)
+    print("Dataset loaded!")
+    return X_train, X_train_mvm, y_train, X_val, X_val_mvm, y_val, X_test, X_test_mvm, y_test
+
+
+
+def main(load_model_filename):
+    X_train, X_train_mvm, y_train, X_val, X_val_mvm, y_val, X_test, X_test_mvm, y_test = load_datasets()
+
+    model = define_joint_model()
+
+    model.compile(loss='categorical_crossentropy', optimizer = Adam(learning_rate=LEARNING_RATE), metrics=["accuracy"]) 
+    print(model.summary())
+                
+    train_data = DataGenerator(X_train, X_train_mvm, y_train, BATCH_SIZE, True, 10, 0, 0)
+    val_data = DataGenerator(X_val, X_val_mvm, y_val, BATCH_SIZE)
+    test_data = DataGenerator(X_test, X_test_mvm, y_test, BATCH_SIZE)
+
+    # create log dir
+    if not os.path.exists(f"{OUTPUT_DIR}/logs/I3D"):
+        os.makedirs(f"{OUTPUT_DIR}/logs/I3D")
+
+    current_time = datetime.datetime.now().isoformat().replace(":", "-")
+
+    if load_model_filename is None:
+        history = fit_model(model, train_data, val_data, test_data, current_time)
+
+        plot_training_history(history, current_time)
+
+        model.load_weights(f'{OUTPUT_DIR}/logs/I3D/best_model_' + current_time + '.hdf5')
+    else:
+        model.load_weights(load_model_filename)
 
     # evalutate accuracy on hold out set
     eval_metrics = model.evaluate(test_data, verbose = 0)
@@ -762,11 +800,18 @@ def main():
             print(metric + ' on hold out set:', round(100 * eval_metrics[idx], 1), "%", sep = "")
 
     # Evaluating the final model on the test set
-    y_pred = np.argmax(model.predict([X_test, X_test_mvm]), axis = 1)
+    # Model expects 32x32 images not 24x24; not sure what was done without this.
+    X_test_padded = np.pad(X_test, ((0,0), (0,0), (4,4), (4,4), (0,0)))
+    predictions = model.predict([X_test_padded, X_test_mvm])
+    y_pred = np.argmax(predictions, axis = 1)
     y_test = np.argmax(y_test, axis = 1)
+    generate_confidence_evaluation(predictions, y_pred, y_test)
     print(classification_report(y_test, y_pred))
     print(confusion_matrix(y_test, y_pred))
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model")
+    args = parser.parse_args()
+    main(args.model)
