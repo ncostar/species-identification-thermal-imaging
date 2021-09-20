@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# AzureML files
+.amlignore
+.amlignore.*
+*.amltmp
+
+# Training Files
+*.npy
