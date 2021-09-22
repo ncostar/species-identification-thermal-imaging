@@ -15,6 +15,8 @@ seaborn = "^0.11.2"
 keras = "^2.6.0"
 matplotlib = "^3.4.3"
 tensorflow = "^2.6.0"
+tensorflow-probability = "^0.13.0"
+uncertainty-calibration = "^0.0.9"
 
 [tool.poetry.dev-dependencies]
 

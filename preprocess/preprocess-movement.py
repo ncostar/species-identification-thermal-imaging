@@ -26,10 +26,12 @@ Encodes the labels as integers.
 Saves the pre-processed data and the labels as numpy arrays.
 """
 
+OUTPUT_DIR = "F:/biosecurity/species-identification-thermal-imaging"
+
 validation_num = 1500
 test_num = 1500
 
-f = h5py.File("C://Users//hamis//Downloads//dataset.hdf5", "r") # Read in the dataset
+f = h5py.File("F:/biosecurity/tracks/dataset.hdf5", "r") # Read in the dataset
 d = f[list(f.keys())[0]]                                        # Access the thermal videos key
 clips = np.zeros([10664, 45, 9])
 
@@ -87,11 +89,11 @@ clips, val_vids, labels, val_labels = train_test_split(clips, labels, test_size 
 train_vids, test_vids, train_labels, test_labels = train_test_split(clips, labels, test_size = test_num, random_state = 123, stratify = labels)
 
 # We save all of the files
-if not os.path.exists("./cacophony-preprocessed-movement"):
-    os.makedirs("./cacophony-preprocessed-movement")
-np.save("./cacophony-preprocessed-movement/training", train_vids)
-np.save("./cacophony-preprocessed-movement/validation", val_vids)
-np.save("./cacophony-preprocessed-movement/test", test_vids)
-np.save("./cacophony-preprocessed-movement/training-labels", train_labels)
-np.save("./cacophony-preprocessed-movement/validation-labels", val_labels)
-np.save("./cacophony-preprocessed-movement/test-labels", test_labels)
+if not os.path.exists(f"{OUTPUT_DIR}/cacophony-preprocessed-movement"):
+    os.makedirs(f"{OUTPUT_DIR}/cacophony-preprocessed-movement")
+np.save(f"{OUTPUT_DIR}/cacophony-preprocessed-movement/training", train_vids)
+np.save(f"{OUTPUT_DIR}/cacophony-preprocessed-movement/validation", val_vids)
+np.save(f"{OUTPUT_DIR}/cacophony-preprocessed-movement/test", test_vids)
+np.save(f"{OUTPUT_DIR}/cacophony-preprocessed-movement/training-labels", train_labels)
+np.save(f"{OUTPUT_DIR}/cacophony-preprocessed-movement/validation-labels", val_labels)
+np.save(f"{OUTPUT_DIR}/cacophony-preprocessed-movement/test-labels", test_labels)
