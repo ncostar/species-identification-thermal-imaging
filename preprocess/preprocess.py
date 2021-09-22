@@ -20,10 +20,20 @@ import torch
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import os
+import cv2 as cv
 
 
 VALIDATION_NUM = 1500
 TEST_NUM = 1500
+
+def dense_optical_flow(frame, prev_gray, mask):
+    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    flow = cv.calcOpticalFlowFarneback(prev_gray, gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+    magnitude, angle = cv.cartToPolar(flow[..., 0], flow[..., 1])
+    mask[..., 0] = angle * 180 / np.pi / 2
+    mask[..., 2] = cv.normalize(magnitude, None, 0, 255, cv.NORM_MINMAX)
+    rgb = cv.cvtColor(mask, cv.COLOR_HSV2BGR)
+    return rgb, gray, mask
 
 
 def get_best_index(vid):
@@ -75,11 +85,18 @@ def normalize(frame):
 
 
 def main(input_file, output_dir):
+    """
+    TODO: remove hard coding of dataset dimensions
+    TODO: move optical flow information into 3 channel format or other usable form
+    """
     f = h5py.File(input_file, "r")  # Read in the dataset
     d = f[list(f.keys())[0]]  # Access the thermal videos key
     clips = np.zeros(
         [10664, 45, 3, 24, 24], dtype=np.float16
     )  # np.float16 saves storage space
+    flow = np.zeros(
+        [10664, 45, 1, 24, 24], dtype=np.float16
+    )
 
     labels_raw = []
     processed = 0
@@ -98,6 +115,13 @@ def main(input_file, output_dir):
             ]:
                 labels_raw += [tag]
                 ind = get_best_index(vid)
+                # Set up reference frame for optical flow
+                first_frame = np.array(vid[str(ind)], dtype=np.float16)[
+                        :2
+                    ]
+                prev_gray = cv.cvtColor(first_frame, cv.COLOR_BGR2GRAY)
+                mask = np.zeros_like(first_frame)
+                mask[..., 1] = 255
                 for f in range(45):
                     frame = np.array(vid[str(f + ind)], dtype=np.float16)[
                         :2
@@ -107,7 +131,9 @@ def main(input_file, output_dir):
                     )  # The desired 3 channels
                     frame = make24x24(frame)  # Interpolate the frame
                     frame = normalize(frame)  # Normalizes each channel
+                    optical_flow_frame, prev_gray, mask = dense_optical_flow(frame, prev_gray, mask)
                     clips[processed, f] = frame
+                    flow[processed, f] = optical_flow_frame
                 processed += 1
                 if processed % 100 == 0:
                     print(processed, "clips processed!")
@@ -156,4 +182,4 @@ if __name__ == "__main__":
     parser.add_argument("input_file")
     parser.add_argument("output_dir")
     args = parser.parse_args()
-    main(args.input_file, args.output_dir)
+    main("../../dataset.hdf5", "out_optical")
