@@ -21,7 +21,9 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import os
 import cv2 as cv
-
+import configparser
+config = configparser.ConfigParser()
+config.read('../config.ini')
 
 VALIDATION_NUM = 1500
 TEST_NUM = 1500
@@ -182,4 +184,4 @@ if __name__ == "__main__":
     parser.add_argument("input_file")
     parser.add_argument("output_dir")
     args = parser.parse_args()
-    main("../../dataset.hdf5", "out_optical")
+    main(config['data']['path'], config['preprocessing']['output'])

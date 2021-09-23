@@ -17,9 +17,13 @@ from matplotlib import pyplot as plt
 import tensorflow as tf
 import random as python_random
 
+import configparser
+config = configparser.ConfigParser()
+config.read('../config.ini')
 
-INPUT_DIR = "F:/biosecurity/species-identification-thermal-imaging"
-OUTPUT_DIR = "F:/biosecurity/species-identification-thermal-imaging"
+
+INPUT_DIR = config['preprocessing']['output']
+OUTPUT_DIR = config['model']['output']
 
 EPOCHS = 100
 BATCH_SIZE = 32
