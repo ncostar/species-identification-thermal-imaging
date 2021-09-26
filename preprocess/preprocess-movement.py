@@ -6,6 +6,10 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import os
 
+import configparser
+config = configparser.ConfigParser()
+config.read('../config.ini')
+
 """
 Discards videos missing a usable tag.
 Discards videos with fewer than 45 frames.
@@ -26,12 +30,12 @@ Encodes the labels as integers.
 Saves the pre-processed data and the labels as numpy arrays.
 """
 
-OUTPUT_DIR = "F:/biosecurity/species-identification-thermal-imaging"
+OUTPUT_DIR = config["preprocessing"]['output']
 
 validation_num = 1500
 test_num = 1500
 
-f = h5py.File("F:/biosecurity/tracks/dataset.hdf5", "r") # Read in the dataset
+f = h5py.File(config['data']['path'], "r") # Read in the dataset
 d = f[list(f.keys())[0]]                                        # Access the thermal videos key
 clips = np.zeros([10664, 45, 9])
 
