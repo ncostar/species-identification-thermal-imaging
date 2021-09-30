@@ -775,7 +775,8 @@ def main(load_model_filename):
 
     model = define_joint_model()
 
-    model.compile(loss='categorical_crossentropy', optimizer = Adam(learning_rate=LEARNING_RATE), metrics=["accuracy"]) 
+    #model.compile(loss='categorical_crossentropy', optimizer = Adam(learning_rate=LEARNING_RATE), metrics=["accuracy"]) 
+    model.compile(optimizer= 'adam' , loss= keras.losses.binary_crossentropy, metrics=['accuracy']) # fixing env error where the other declaration fails
     print(model.summary())
                 
     train_data = DataGenerator(X_train, X_train_mvm, y_train, BATCH_SIZE, True, 10, 0, 0)
