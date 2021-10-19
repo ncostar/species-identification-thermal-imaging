@@ -17,9 +17,13 @@ from matplotlib import pyplot as plt
 import tensorflow as tf
 import random as python_random
 
+import configparser
+config = configparser.ConfigParser()
+config.read('../config.ini')
 
-INPUT_DIR = "F:/biosecurity/species-identification-thermal-imaging"
-OUTPUT_DIR = "F:/biosecurity/species-identification-thermal-imaging"
+
+INPUT_DIR = config['preprocessing']['output']
+OUTPUT_DIR = config['model']['output']
 
 EPOCHS = 100
 BATCH_SIZE = 32
@@ -771,7 +775,8 @@ def main(load_model_filename):
 
     model = define_joint_model()
 
-    model.compile(loss='categorical_crossentropy', optimizer = Adam(learning_rate=LEARNING_RATE), metrics=["accuracy"]) 
+    #model.compile(loss='categorical_crossentropy', optimizer = Adam(learning_rate=LEARNING_RATE), metrics=["accuracy"]) 
+    model.compile(optimizer= 'adam' , loss= keras.losses.binary_crossentropy, metrics=['accuracy']) # fixing env error where the other declaration fails
     print(model.summary())
                 
     train_data = DataGenerator(X_train, X_train_mvm, y_train, BATCH_SIZE, True, 10, 0, 0)

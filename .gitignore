@@ -135,3 +135,7 @@ dmypy.json
 
 # Training Files
 *.npy
+
+# Local config
+config.ini
+.DS_Store
